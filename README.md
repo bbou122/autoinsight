@@ -4,7 +4,6 @@
 [![Streamlit](https://img.shields.io/badge/Streamlit-app-ff4b4b.svg)](https://streamlit.io/)
 [![Checks](https://img.shields.io/badge/self--checks-passing-brightgreen.svg)](tests/selfcheck.py)
 
-<<<<<<< HEAD
 **Created by Braden Bourgeois · LSU**
 
 Ask a dataset questions in plain English **or** explore it through an interactive
