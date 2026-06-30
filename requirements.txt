@@ -1,0 +1,6 @@
+streamlit>=1.36
+pandas>=2.0
+numpy>=1.24
+plotly>=5.20
+# Optional — only used if GROQ_API_KEY / OPENAI_API_KEY is set (LLM narrative upgrade):
+groq>=0.11

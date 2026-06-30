@@ -1,0 +1,24 @@
+flowchart TD
+    U([User question in chat]) --> R{Intent Router<br/>deterministic + LLM-optional}
+
+    R -->|top-N / ranking| A[Analyst Node]
+    R -->|trend over time| A
+    R -->|anomaly detection| A
+    R -->|correlation| A
+    R -->|segment comparison| A
+
+    subgraph ING[Ingestion - runs once on load]
+        F[/CSV or Excel upload<br/>or Try-sample-data/] --> C[Clean: parse dates,<br/>handle nulls]
+        C --> FE[Feature engineering:<br/>shipping_days, order totals,<br/>time + customer features]
+        FE --> P[Auto-profile +<br/>self-check assertions]
+        P --> DF[(Clean DataFrame<br/>in session_state)]
+    end
+
+    DF -.->|live data| A
+    A --> EX[Execute analysis<br/>pandas in sandbox]
+    EX --> V{Validator Node<br/>independent recompute<br/>matches?}
+    V -->|mismatch| A
+    V -->|match| NAR[Insight Generator<br/>numbers to narrative]
+    NAR --> VIZ[Visualizer<br/>Plotly figure]
+    VIZ --> RESP([Answer + chart<br/>rendered in chat])
+    RESP -.->|memory: prior question + result| R
