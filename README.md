@@ -4,14 +4,21 @@
 [![Streamlit](https://img.shields.io/badge/Streamlit-app-ff4b4b.svg)](https://streamlit.io/)
 [![Checks](https://img.shields.io/badge/self--checks-passing-brightgreen.svg)](tests/selfcheck.py)
 
+<<<<<<< HEAD
 **Created by Braden Bourgeois · LSU**
 
 Ask a dataset questions in plain English **or** explore it through an interactive
 dashboard. AutoInsight interprets each question, writes and executes the analysis,
 generates a visualization, and **independently re-computes every headline number
 before showing it** — so answers are auditable, not hallucinated.
+=======
+Ask a dataset questions in and get **verified** answers with charts.
+AutoInsight interprets the question, writes and executes the analysis, generates a
+visualization, and **independently re-computes every headline number before showing
+it** — so the answers are auditable, not hallucinated.
+>>>>>>> 58f142c0707f12ccd22a54218d6a7c041f058a04
 
-> **Live demo:** _add your https://….streamlit.app link here after deploying_
+> **Live demo:** https://autoinsight-pzhffkyupktlcevo2xbk32.streamlit.app/
 
 **Sample dataset:** Olist Brazilian e-commerce — 99,441 orders, Sep 2016 → Oct 2018,
 27 states, 74 product categories (joined from 9 raw tables). Currency is Brazilian reais (R$).
@@ -115,8 +122,15 @@ optional Groq/OpenAI LLM layer · validation-gated agent flow.
 
 - Orders spanning multiple categories use the dominant category (documented simplification).
 - Upload path expects the prepared master schema; arbitrary-CSV profiling is a roadmap item.
+<<<<<<< HEAD
 - Next: LangGraph checkpointed memory and an eval suite scoring insight quality + hallucination rate.
 
 ---
 
 *Built by Braden Bourgeois (LSU) as an analytics portfolio project. Data © Olist, CC BY-NC-SA 4.0.*
+=======
+- Next: LangGraph checkpointed memory, an eval suite scoring insight quality +
+  hallucination rate, and cost/latency logging.
+  
+## Thank you, Braden Bourgeois
+>>>>>>> 58f142c0707f12ccd22a54218d6a7c041f058a04
