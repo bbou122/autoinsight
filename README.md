@@ -1,42 +1,53 @@
-# AutoInsight — Conversational AI Data Analyst Agent
+# AutoInsight — Conversational + Interactive AI Data Analyst
 
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-app-ff4b4b.svg)](https://streamlit.io/)
 [![Checks](https://img.shields.io/badge/self--checks-passing-brightgreen.svg)](tests/selfcheck.py)
 
-Ask a dataset questions in plain English and get **verified** answers with charts.
-AutoInsight interprets the question, writes and executes the analysis, generates a
-visualization, and **independently re-computes every headline number before showing
-it** — so the answers are auditable, not hallucinated.
+**Created by Braden Bourgeois · LSU**
+
+Ask a dataset questions in plain English **or** explore it through an interactive
+dashboard. AutoInsight interprets each question, writes and executes the analysis,
+generates a visualization, and **independently re-computes every headline number
+before showing it** — so answers are auditable, not hallucinated.
 
 > **Live demo:** _add your https://….streamlit.app link here after deploying_
 
-**Sample dataset:** Olist Brazilian e-commerce — 99,441 orders, Sept 2016 → Oct 2018,
-27 states, 74 product categories (joined from 9 raw tables).
+**Sample dataset:** Olist Brazilian e-commerce — 99,441 orders, Sep 2016 → Oct 2018,
+27 states, 74 product categories (joined from 9 raw tables). Currency is Brazilian reais (R$).
 
 ---
 
-## What it does
+## Three ways to use it
 
-Open the app, click **Try sample data**, and ask things like:
+**💬 Ask the agent** — type a question and get a verified answer, chart, and table:
 
-- "What are the top 5 states by revenue?"
+- "Top 5 states by revenue"
 - "Which product categories have the worst review scores?"
-- "Show revenue trends over time"
-- "Are there anomalies in monthly revenue?"
+- "In São Paulo, revenue by product category in 2018"
+- "What state made the most revenue in January 2018?"
 - "Does delivery delay affect review score?"
 
-Each answer returns a plain-language insight, an interactive Plotly chart, the
-underlying table, and a **✓ validated** badge showing the independent recompute.
+It understands **measures**, **dimensions**, **Brazilian states** (code or full name,
+e.g. `SP` / *São Paulo*), and **time periods** (`in 2017`, `January 2018`, `Q3 2018`).
+Ask a US state and it tells you the data is Brazilian instead of silently ignoring it.
+
+**📊 Explore dashboard** — filter by state and year, then read the story in the data
+through linked charts: revenue growth over time, top categories and states, two
+**filterable pie charts** (category share and payment mix), and a satisfaction chart
+showing how late deliveries crush review scores (2.35★ late vs 4.29★ on-time).
+
+**📖 Data dictionary** — a clean reference of every field, what it means, the words to
+use, and example questions.
 
 ## Why it's different from a chatbot
 
 | Production concern | How AutoInsight handles it |
 |---|---|
-| **Hallucinated numbers** | A validator recomputes every headline via a *separate code path*; mismatches are flagged, not shown as trusted. |
-| **Works without paid APIs** | A deterministic intent router answers top-N / trend / anomaly / correlation / segment questions with **zero API keys**. An LLM key only upgrades the narrative wording. |
+| **Hallucinated numbers** | A validator recomputes every headline via a *separate code path*; the chat shows a ✓ validated badge with the recomputed value. |
+| **Works without paid APIs** | A deterministic router answers top-N / trend / anomaly / correlation / segment questions with **zero API keys**. An LLM key only upgrades the wording. |
 | **Data integrity** | Ingestion self-checks assert row counts, join totals (item price & payments reconcile to the raw files to the cent), and value ranges before anything is served. |
-| **Memory** | Conversation + loaded data persist in session state for follow-up questions. |
+| **Charts are tested too** | Every Explore chart's aggregation is cross-checked against an independent pandas computation in `tests/selfcheck.py`. |
 
 ## Architecture
 
@@ -44,28 +55,29 @@ underlying table, and a **✓ validated** badge showing the independent recomput
 User question
    │
    ▼
-Intent Router ──► Analyst Node ──► Execute (pandas) ──► Validator ──► Narrative ──► Chart ──► Answer
-(deterministic        (top-N, trend,                    (independent
- + LLM-optional)       anomaly, corr,                    recompute;
-                       segment)                          flag on mismatch)
+Intent Router ──► State/Time filter ──► Analyst Node ──► Execute (pandas) ──► Validator ──► Chart ──► Answer
+(deterministic                          (top-N, trend,                       (independent
+ + LLM-optional)                         anomaly, corr,                       recompute;
+                                         segment)                             flag on mismatch)
 ```
 
-Full diagram: [`docs/architecture.mermaid`](docs/architecture.mermaid).
+Diagram: [`docs/architecture.mermaid`](docs/architecture.mermaid) ·
 Design rationale (LangGraph vs CrewAI): [`docs/ADR-001-orchestration.md`](docs/ADR-001-orchestration.md).
 
-## Data pipeline
+## Project layout
 
-`insight_agent/ingest.py` joins the 9 raw Olist tables into one order-level master
-table. Engineered features turn a transactional dump into an analytical surface:
-
-- `delivery_days`, `delivery_delay_days`, `on_time` (order vs. delivery vs. estimate)
-- order-level `total_price`, `total_freight`, `payment_value`, `n_items`, `max_installments`
-- `main_category` (English), `main_payment_type`, `review_score`
-- time features: year, month, quarter, day-of-week
-
-**Self-checks (run on every build):** row count == distinct orders; summed item
-price and payment value reconcile to the raw files; review scores in [1, 5];
-timestamps fully parsed.
+```
+app.py                       Streamlit app (Ask / Explore / Dictionary tabs)
+insight_agent/
+  ingest.py                  joins 9 Olist tables -> order-level master (+ self-checks)
+  tools.py                   analysis primitives w/ independent validation
+  router.py                  NL -> intent, + time & Brazilian-state parsing
+  agent.py                   orchestration, filters, data dictionary
+  explore.py                 interactive dashboard charts (story-sequenced)
+tests/selfcheck.py           verifies answers AND chart aggregations vs ground truth
+sample_data/olist_master.csv.gz
+docs/                        ADR + architecture diagram
+```
 
 ## Run locally
 
@@ -74,12 +86,8 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The cleaned sample table is bundled in `sample_data/`, so it runs out of the box.
-To rebuild it from the raw Olist CSVs:
-
-```bash
-python insight_agent/ingest.py /path/to/olist_csvs sample_data/olist_master.csv.gz
-```
+The cleaned sample table is bundled, so it loads automatically. To rebuild it from
+the raw Olist CSVs: `python insight_agent/ingest.py /path/to/olist_csvs sample_data/olist_master.csv.gz`
 
 ## Verify
 
@@ -87,22 +95,16 @@ python insight_agent/ingest.py /path/to/olist_csvs sample_data/olist_master.csv.
 python tests/selfcheck.py
 ```
 
-Runs a battery of natural-language questions and cross-checks each agent answer
-against an independent pandas ground truth (top revenue state, worst-review
-category, delay↔review correlation). Exits non-zero on any mismatch.
+Runs the agent over a battery of questions (including state and time filters) and
+cross-checks each answer **and** each Explore chart against an independent pandas
+ground truth. Exits non-zero on any mismatch.
 
 ## Deploy (Streamlit Community Cloud — free)
 
 1. Push this folder to a public GitHub repo.
-2. Go to [share.streamlit.io](https://share.streamlit.io) → **New app** → pick the repo,
-   branch `main`, main file `app.py`.
-3. Click **Deploy**. You get a public `https://<name>.streamlit.app` URL — no login
-   required for visitors.
-4. *(Optional)* To enable richer LLM narration, add a secret in the app's
-   **Settings → Secrets**:
-   ```toml
-   GROQ_API_KEY = "your_free_groq_key"
-   ```
+2. [share.streamlit.io](https://share.streamlit.io) → **New app** → pick the repo, branch `main`, main file `app.py` → **Deploy**.
+3. You get a public `https://<name>.streamlit.app` URL — no login required for visitors.
+4. *(Optional)* richer narration: add `GROQ_API_KEY = "..."` under the app's **Settings → Secrets**.
 
 ## Tech
 
@@ -113,5 +115,8 @@ optional Groq/OpenAI LLM layer · validation-gated agent flow.
 
 - Orders spanning multiple categories use the dominant category (documented simplification).
 - Upload path expects the prepared master schema; arbitrary-CSV profiling is a roadmap item.
-- Next: LangGraph checkpointed memory, an eval suite scoring insight quality +
-  hallucination rate, and cost/latency logging.
+- Next: LangGraph checkpointed memory and an eval suite scoring insight quality + hallucination rate.
+
+---
+
+*Built by Braden Bourgeois (LSU) as an analytics portfolio project. Data © Olist, CC BY-NC-SA 4.0.*
