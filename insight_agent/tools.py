@@ -25,6 +25,13 @@ PALETTE = ["#2563eb", "#0ea5e9", "#14b8a6", "#f59e0b", "#ef4444", "#8b5cf6"]
 _LAYOUT = dict(template="plotly_white", font=dict(family="Inter, system-ui, sans-serif", size=13),
                margin=dict(l=10, r=10, t=50, b=10), title_font_size=17, colorway=PALETTE, height=420)
 
+# pandas 3.0 removed the "M" resample alias in favor of "ME"; pick whatever is valid.
+try:
+    pd.tseries.frequencies.to_offset("ME")
+    _MONTH = "ME"
+except Exception:
+    _MONTH = "M"
+
 
 @dataclass
 class Result:
@@ -74,14 +81,14 @@ def top_n(df, dimension, measure, agg="sum", n=10, ascending=False, min_count=0)
                    "ascending": ascending, "min_count": min_count})
 
 
-def trend(df, measure, agg="sum", freq="M"):
+def trend(df, measure, agg="sum", freq=_MONTH):
     t = df.dropna(subset=["order_purchase_timestamp"]).set_index("order_purchase_timestamp")
     s = t[measure].resample(freq).agg(agg).dropna()
     out = s.reset_index()
     out.columns = ["Period", _label(measure)]
-    last_p = s.index[-1]
-    mask = (df["order_purchase_timestamp"] >= last_p.to_period("M").start_time) & \
-           (df["order_purchase_timestamp"] <= last_p)
+    lp = s.index[-1].to_period("M")
+    mask = (df["order_purchase_timestamp"] >= lp.start_time) & \
+           (df["order_purchase_timestamp"] <= lp.end_time)
     indep = df.loc[mask, measure].agg(agg)  # independent recompute of last period
     passed = abs(float(indep) - float(s.iloc[-1])) < 1e-6
     fig = None
@@ -97,7 +104,7 @@ def trend(df, measure, agg="sum", freq="M"):
                   {"measure": measure, "agg": agg, "freq": freq})
 
 
-def anomaly(df, measure, agg="sum", freq="M", z=2.0):
+def anomaly(df, measure, agg="sum", freq=_MONTH, z=2.0):
     t = df.dropna(subset=["order_purchase_timestamp"]).set_index("order_purchase_timestamp")
     s = t[measure].resample(freq).agg(agg).dropna()
     mu, sd = s.mean(), s.std()

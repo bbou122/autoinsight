@@ -29,7 +29,7 @@ def _summary(df) -> tools.Result:
             f"{df['customer_state'].nunique()}",
         ],
     })
-    res = tools.trend(df, "payment_value", "sum", "M")
+    res = tools.trend(df, "payment_value", "sum")
     res.intent = "summary"
     res.table = kpis
     res.headline = (f"**{len(df):,} orders**, **R${rev:,.0f}** revenue, avg review "
